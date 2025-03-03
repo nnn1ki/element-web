@@ -67,4 +67,7 @@ export enum UIComponent {
      * Components that lead the user to room options menu.
      */
     RoomOptionsMenu = "UIComponent.roomOptionsMenu",
+
+    //todo - понять для чего это нужно
+    ConferoomRooms = "UIComponent.conferoomroom",
 }

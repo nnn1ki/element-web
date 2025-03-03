@@ -54,6 +54,8 @@ import { deop, op } from "./slash-commands/op";
 import { CommandCategories } from "./slash-commands/interface";
 import { Command } from "./slash-commands/command";
 import { goto, join } from "./slash-commands/join";
+import sha1 from "crypto-js/sha1";
+import encHex from "crypto-js/enc-hex";
 
 export { CommandCategories, Command };
 
@@ -873,7 +875,7 @@ export const Commands = [
     }),
     new Command({
         command: "converttoroom",
-        description: _td("slash_command|converttoroom"),
+        description: _td("slash_command|jiujitsu"),
         category: CommandCategories.other,
         isEnabled: (cli) => !isCurrentLocalRoom(cli),
         runFn: function (cli, roomId, threadId, args) {
@@ -882,6 +884,80 @@ export const Commands = [
             return success(guessAndSetDMRoom(room, false));
         },
         renderingTypes: [TimelineRenderingType.Room],
+    }),
+    //виджет для работы jitsi
+    new Command({
+        command: "jitsi",
+        description: _td("slash_command|jitsi_description"), // Описание команды
+        category: CommandCategories.other, // Категория команды
+        isEnabled: (cli) => true, // Команда всегда доступна
+        runFn: function (cli, roomId, threadId, args) {
+            // Получаем текущую комнату
+            const room = cli.getRoom(roomId);
+            if (!room) return reject(new UserFriendlyError("slash_command|could_not_find_room"));
+
+            // Генерируем URL для Jitsi
+            const domain = "jitsi.riot.im"; // Используйте ваш домен, если нужно
+            const jitsiUrl = `https://${domain}/${roomId}`;
+
+            // Отправляем сообщение с URL Jitsi в комнату
+            cli.sendEvent(roomId, "m.room.message", {
+                msgtype: "m.text",
+                body: `Join the Jitsi meeting: ${jitsiUrl}`,
+            });
+
+            // Возвращаем успешный результат
+            return success();
+        },
+        renderingTypes: [TimelineRenderingType.Room], // Команда доступна только в комнатах
+    }),
+    //команда для интеграции с конферумом
+    new Command({
+        command: "conferoom",
+        description: _td("slash_command|conferoom_description"), // Описание команды
+        category: CommandCategories.other, // Категория команды
+        isEnabled: (cli) => true, // Команда всегда доступна
+        runFn: async function (cli, roomId, threadId, args) {
+
+            const computeChecksum = (apiCall: string, params: string, secret: string): string => {
+                const stringToHash = apiCall + params + secret;
+                return sha1(stringToHash).toString(encHex);
+            };
+
+            // Получаем текущую комнату
+            const room = cli.getRoom(roomId);
+            if (!room) return reject(new UserFriendlyError("slash_command|could_not_find_room"));
+
+            const apiCall = 'create';
+            const params = `meetingID=${Date.now()}&name=${encodeURIComponent(room.name)}&moderatorPW=mp&attendeePW=ap`;
+            const secret = 'aTlvewVe1ddZFK9bmCY6TOCYg01WNfyPJUCEUUve8tE';
+
+            const checksum = computeChecksum(apiCall, params, secret);
+
+            // Генерируем уникальный meetingID
+            const meetingID = `meeting-${roomId}-${Date.now()}`;
+
+            // Создаем комнату в Conferoom
+            // const createUrl = `http://localhost/bigbluebutton/api/create?meetingID=${meetingID}&name=${encodeURIComponent(room.name)}&moderatorPW=mp&attendeePW=ap`;
+            const createUrl = `http://localhost/bigbluebutton/api/create?${params}&checksum=${checksum}`;
+            const createResponse = await fetch(createUrl);
+            if (!createResponse.ok) {
+                return reject(new UserFriendlyError("slash_command|conferoom_create_failed"));
+            }
+
+            // Генерируем ссылку для присоединения
+            const joinUrl = `http://localhost/bigbluebutton/api/join?fullName=User&meetingID=${meetingID}&password=mp`;
+
+            // Отправляем сообщение с ссылкой в комнату
+            cli.sendEvent(roomId, "m.room.message", {
+                msgtype: "m.text",
+                body: `Join the Conferoom meeting: ${joinUrl}`,
+            });
+
+            // Возвращаем успешный результат
+            return success();
+        },
+        renderingTypes: [TimelineRenderingType.Room], // Команда доступна только в комнатах
     }),
 
     // Command definitions for autocompletion ONLY:

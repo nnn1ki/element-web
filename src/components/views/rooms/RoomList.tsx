@@ -119,8 +119,9 @@ const DmAuxButton: React.FC<IAuxButtonProps> = ({ tabIndex, dispatcher = default
 
     const showCreateRooms = shouldShowComponent(UIComponent.CreateRooms);
     const showInviteUsers = shouldShowComponent(UIComponent.InviteUsers);
+    const showConferoomRooms = shouldShowComponent(UIComponent.ConferoomRooms); //niki - нужно ли показывать этот список
 
-    if (activeSpace && (showCreateRooms || showInviteUsers)) {
+    if (activeSpace && (showCreateRooms || showInviteUsers || showConferoomRooms)) {
         let contextMenu: JSX.Element | undefined;
         if (menuDisplayed && handle.current) {
             const canInvite = shouldShowSpaceInvite(activeSpace);
@@ -157,6 +158,18 @@ const DmAuxButton: React.FC<IAuxButtonProps> = ({ tabIndex, dispatcher = default
                                 disabled={!canInvite}
                                 title={canInvite ? undefined : _t("spaces|error_no_permission_invite")}
                             />
+                        )}
+                        {/* niki - попытка добавит новый раздел для отображения списика*/}
+                        {showConferoomRooms && (
+                            <>
+                                <span>вот тут список</span>
+                                <IconizedContextMenuOption
+                                    iconClassName="mx_RoomList_iconInvite"
+                                    onClick={(e) => { // niki - вот тут мы и должны писать действие присоединения к встрече
+                                        console.log("получилось нажать)")
+                                    }}
+                                />
+                            </>
                         )}
                     </IconizedContextMenuOptionList>
                 </IconizedContextMenu>
@@ -287,6 +300,7 @@ const UntaggedAuxButton: React.FC<IAuxButtonProps> = ({ tabIndex }) => {
             <IconizedContextMenuOptionList first>
                 {showCreateRoom && (
                     <>
+
                         <IconizedContextMenuOption
                             label={_t("action|new_room")}
                             iconClassName="mx_RoomList_iconNewRoom"

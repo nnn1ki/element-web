@@ -66,6 +66,8 @@ import MainSplit from "./MainSplit";
 import RightPanel from "./RightPanel";
 import SpaceHierarchy, { showRoom } from "./SpaceHierarchy";
 import { RoomPermalinkCreator } from "../../utils/permalinks/Permalinks";
+import sha1 from 'crypto-js/sha1';
+import encHex from 'crypto-js/enc-hex'; //todo - убрать вычисление в другое место
 
 interface IProps {
     space: Room;
@@ -200,6 +202,8 @@ const SpaceLandingAddButton: React.FC<{ space: Room }> = ({ space }) => {
     );
 };
 
+
+// класс главной страницы пространства
 const SpaceLanding: React.FC<{ space: Room }> = ({ space }) => {
     const cli = useContext(MatrixClientContext);
     const myMembership = useMyRoomMembership(space);
@@ -254,6 +258,48 @@ const SpaceLanding: React.FC<{ space: Room }> = ({ space }) => {
         RightPanelStore.instance.setCard({ phase: RightPanelPhases.MemberList });
     };
 
+
+    const computeChecksum = (apiCall: string, params: string, secret: string): string => {
+        const stringToHash = apiCall + params + secret;
+        return sha1(stringToHash).toString(encHex);
+    };
+
+    //todo - перенести этот код в другое место
+    //для обработки перехода в комнату конферума
+    const handleConferoomClick = async () => {
+        const meetingID = `meeting-${space.roomId}-${Date.now()}`;
+        const apiCall = 'create';
+        const params = `meetingID=${meetingID}&name=${encodeURIComponent(space.name)}&moderatorPW=mp&attendeePW=ap`;
+        const secret = 'aTlvewVe1ddZFK9bmCY6TOCYg01WNfyPJUCEUUve8tE';
+
+        const checksum = computeChecksum(apiCall, params, secret);
+        //const createUrl = `https://localhost/bigbluebutton/api/create?${params}&checksum=${checksum}`;
+        const createUrl = `http://localhost/bigbluebutton/api/create?${params}&checksum=${checksum}`;
+        console.log("Create URL:", createUrl);
+
+        try {
+            const createResponse = await fetch(createUrl);
+            console.log("Create Response:", createResponse);
+
+            if (!createResponse.ok) {
+                console.error("Failed to create Conferoom meeting");
+                return;
+            }
+
+            //так все-таки conferoom или localhost
+            const joinParams = `fullName=User&meetingID=${meetingID}&password=mp`;
+            const joinChecksum = computeChecksum('join', joinParams, secret);
+            const joinUrl = `http://localhost/bigbluebutton/api/join?${joinParams}&checksum=${joinChecksum}`;
+            console.log("Join URL:", joinUrl);
+
+            // Открываем ссылку в новой вкладке
+            window.open(joinUrl, '_blank');
+        } catch (error) {
+            console.error("Error creating Conferoom meeting:", error);
+        }
+    };
+
+
     return (
         <div className="mx_SpaceRoomView_landing">
             <div className="mx_SpaceRoomView_landing_header">
@@ -281,6 +327,7 @@ const SpaceLanding: React.FC<{ space: Room }> = ({ space }) => {
                 </div>
             </div>
             <RoomTopic room={space} className="mx_SpaceRoomView_landing_topic" />
+            <button onClick={handleConferoomClick}>Conferoom</button>
 
             <SpaceHierarchy space={space} showRoom={showRoom} additionalButtons={addRoomButton} />
         </div>
@@ -580,6 +627,7 @@ const SpaceSetupPrivateInvite: React.FC<{
                 </AccessibleButton>
             </div>
 
+
             <div className="mx_SpaceRoomView_buttons">
                 <AccessibleButton
                     kind="primary"
@@ -591,6 +639,8 @@ const SpaceSetupPrivateInvite: React.FC<{
                     value={buttonLabel}
                 />
             </div>
+
+
         </div>
     );
 };
@@ -747,6 +797,10 @@ export default class SpaceRoomView extends React.PureComponent<IProps, IState> {
                         onFinished={() => this.setState({ phase: Phase.Landing })}
                     />
                 );
+            // case Phase.ConferoomRoom:
+            //     return (
+            //         <SpaceConferoomRooms/>
+            //     );
         }
     }
 

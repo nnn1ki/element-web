@@ -212,6 +212,22 @@ export default class RightPanel extends React.Component<Props, IState> {
                     );
                 }
                 break;
+            // //     todo - добавил свою кнопку в правое боковое меню
+            // case RightPanelPhases.ConferoomRoom:
+            //     if (!!this.props.room) {
+            //         card = (
+            //             <>
+            //                 <PinnedMessagesCard
+            //                     room={this.props.room}
+            //                     onClose={this.onClose}
+            //                     permalinkCreator={this.props.permalinkCreator}
+            //                 />
+            //                 <span>Conferoom</span>
+            //             </>
+            //
+            //         );
+            //     }
+            //     break;
             case RightPanelPhases.Timeline:
                 if (!!this.props.room) {
                     card = (

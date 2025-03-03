@@ -15,6 +15,9 @@ export enum RightPanelPhases {
     MemberInfo = "MemberInfo",
     ThreePidMemberInfo = "ThreePidMemberInfo",
 
+    // todo - сделать связь с конферумом
+    ConferoomRoom = "Conferoom Room",
+
     // Room stuff
     FilePanel = "FilePanel",
     NotificationPanel = "NotificationPanel",

@@ -367,6 +367,22 @@ export default function RoomHeader({
                             <ThreadsIcon />
                         </IconButton>
                     </Tooltip>
+
+                    {/* todo - эта кнопка может открывать конферум */}
+                    <Tooltip label={"conferoom"}>
+                        <IconButton
+                            indicator={notificationLevelToIndicator(threadNotifications)}
+                            onClick={(evt) => {
+                                evt.stopPropagation();
+                                RightPanelStore.instance.showOrHidePhase(RightPanelPhases.ThreadPanel);
+                                PosthogTrackers.trackInteraction("WebRoomHeaderButtonsThreadsButton", evt);
+                            }}
+                            aria-label={_t("common|threads")}
+                        >
+                            <ThreadsIcon />
+                        </IconButton>
+                    </Tooltip>
+
                     {notificationsEnabled && (
                         <Tooltip label={_t("notifications|enable_prompt_toast_title")}>
                             <IconButton
